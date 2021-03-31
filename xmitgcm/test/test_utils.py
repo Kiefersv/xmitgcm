@@ -1057,7 +1057,7 @@ def test_get_grid_from_input(all_grid_datadirs, usedask):
                                      dtype=np.dtype('d'), endian='>',
                                      use_dask=False,
                                      extra_metadata=None)
-
+            
 
 @pytest.mark.parametrize("dtype", [np.dtype('d'), np.dtype('f')])
 def test_write_to_binary(dtype):

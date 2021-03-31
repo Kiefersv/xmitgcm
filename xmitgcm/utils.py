@@ -1308,7 +1308,7 @@ def get_extra_metadata(domain='llc', nx=90):
 
 
 def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
-                        dtype=np.dtype('d'), endian='>', use_dask=False,
+                        dtype=np.dtype('d'), endian='>', use_dask=False, outer=False,
                         extra_metadata=None):
     """ 
     Read grid variables from grid input files, this is especially useful
@@ -1332,6 +1332,8 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
         endianness of input data
     use_dask : bool
         use dask or not
+    outer : bool
+        include outer boundary or not
     extra_metadata : dict
         dictionary of extra metadata, needed for llc configurations
 
@@ -1346,6 +1348,15 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
     file_metadata['fldList'] = ['XC', 'YC', 'DXF', 'DYF', 'RAC',
                                 'XG', 'YG', 'DXV', 'DYU', 'RAZ',
                                 'DXC', 'DYC', 'RAW', 'RAS', 'DXG', 'DYG']
+
+    if outer:
+        outerx_vars = ['DXC', 'RAW', 'DYG']
+        outery_vars = ['DYC', 'RAS', 'DXG']
+        outerxy_vars = ['XG', 'YG', 'RAZ']
+    else:
+        outerx_vars = []
+        outery_vars = []
+        outerxy_vars = []
 
     file_metadata['vars'] = file_metadata['fldList']
     dims_vars_list = []
@@ -1398,6 +1409,7 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
             elif file_metadata['facet_orders'][kfacet] == 'F':
                 nxgrid = file_metadata['ny_facets'][kfacet] + 1
                 nygrid = file_metadata['nx'] + 1
+            
 
             grid_metadata.update({'nx': nxgrid, 'ny': nygrid,
                                   'has_faces': False})
@@ -1413,7 +1425,15 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
 
             for field in file_metadata['fldList']:
                 # symetrize
-                tmp = rawfields[field][:, :, :-1, :-1].squeeze()
+                if field in outerx_vars:
+                    tmp = rawfields[field][:, :, :, :-1].squeeze()
+                elif field in outery_vars:
+                    tmp = rawfields[field][:, :, :-1, :].squeeze()
+                elif field in outerxy_vars:
+                    tmp = rawfields[field][:, :, :, :].squeeze()
+                else:
+                    tmp = rawfields[field][:, :, :-1, :-1].squeeze()
+
                 # transpose
                 if grid_metadata['facet_orders'][kfacet] == 'F':
                     tmp = tmp.transpose()
@@ -1423,7 +1443,10 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
                     if grid_metadata['face_facets'][face] == kfacet:
                         # get offset of face from facet
                         offset = file_metadata['face_offsets'][face]
-                        nx = file_metadata['nx']
+                        if field in outerx_vars + outerxy_vars + outery_vars:
+                            nx = file_metadata['nx'] + 1
+                        else:
+                            nx = file_metadata['nx']
                         # pad data, if needed (would trigger eager data eval)
                         # needs a new array not to pad multiple times
                         padded = _pad_array(tmp, file_metadata, face=face)
@@ -1441,6 +1464,7 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
                                 [gridfields[field], dataface], axis=0)
 
     # create the dataset
+    nxouter = file_metadata['nx'] + 1 if outer else file_metadata['nx']
     if geometry == 'llc':
         grid = xr.Dataset({'XC':  (['face', 'j', 'i'],     gridfields['XC']),
                            'YC':  (['face', 'j', 'i'],     gridfields['YC']),
@@ -1462,9 +1486,9 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
                           coords={'i': (['i'], np.arange(file_metadata['nx'])),
                                   'j': (['j'], np.arange(file_metadata['nx'])),
                                   'i_g': (['i_g'],
-                                          np.arange(file_metadata['nx'])),
+                                          np.arange(nxouter)),
                                   'j_g': (['j_g'],
-                                          np.arange(file_metadata['nx'])),
+                                          np.arange(nxouter)),
                                   'face': (['face'], np.arange(nfaces))
                                   }
                           )
@@ -1489,13 +1513,14 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
                           coords={'i': (['i'], np.arange(file_metadata['nx'])),
                                   'j': (['j'], np.arange(file_metadata['nx'])),
                                   'i_g': (['i_g'],
-                                          np.arange(file_metadata['nx'])),
+                                          np.arange(nxouter)),
                                   'j_g': (['j_g'],
-                                          np.arange(file_metadata['nx'])),
+                                          np.arange(nxouter)),
                                   'face': (['face'], np.arange(nfaces))
                                   }
                           )
     else:  # pragma: no cover
+        nyouter = file_metadata['ny'] + 1 if outer else file_metadata['ny']
         grid = xr.Dataset({'XC':  (['j', 'i'],     gridfields['XC']),
                            'YC':  (['j', 'i'],     gridfields['YC']),
                            'DXF': (['j', 'i'],     gridfields['DXF']),
@@ -1516,9 +1541,9 @@ def get_grid_from_input(gridfile, nx=None, ny=None, geometry='llc',
                           coords={'i': (['i'], np.arange(file_metadata['nx'])),
                                   'j': (['j'], np.arange(file_metadata['ny'])),
                                   'i_g': (['i_g'],
-                                          np.arange(file_metadata['nx'])),
+                                          np.arange(nxouter)),
                                   'j_g': (['j_g'],
-                                          np.arange(file_metadata['ny']))
+                                          np.arange(nyouter))
                                   }
                           )
 
