@@ -445,6 +445,63 @@ for n in range(1,100):
 aliases = {'Eta': 'ETAN', 'PhiBot': 'PHIBOT', 'Salt': 'SALT', 'Theta': 'THETA'}
 
 package_state_variables = {
+	'ClAb': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="ClAb",
+        long_name='Cloud number density ratio', units='')),
+	'ClDs': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="ClDs",
+        long_name='Cloud particle size', units='microns')),
+	'ClDd': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="ClDs",
+        long_name='Cloud particle size distribution', units='microns')),
+	'Cl01': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl01",
+        long_name='Volum fraction of condensate 1', units='')),
+	'Cl02': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl02",
+        long_name='Volum fraction of condensate 2', units='')),
+	'Cl03': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl03",
+        long_name='Volum fraction of condensate 3', units='')),
+	'Cl04': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl04",
+        long_name='Volum fraction of condensate 4', units='')),
+	'Cl05': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl05",
+        long_name='Volum fraction of condensate 5', units='')),
+	'Cl06': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl06",
+        long_name='Volum fraction of condensate 6', units='')),
+	'Cl07': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl07",
+        long_name='Volum fraction of condensate 7', units='')),
+	'Cl08': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl08",
+        long_name='Volum fraction of condensate 8', units='')),
+	'Cl09': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl09",
+        long_name='Volum fraction of condensate 9', units='')),
+	'Cl10': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl10",
+        long_name='Volum fraction of condensate 10', units='')),
+	'Cl11': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl11",
+        long_name='Volum fraction of condensate 11', units='')),
+	'Cl12': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl12",
+        long_name='Volum fraction of condensate 12', units='')),
+	'Cl13': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl13",
+        long_name='Volum fraction of condensate 13', units='')),
+	'Cl14': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl14",
+        long_name='Volum fraction of condensate 14', units='')),
+	'Cl15': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl15",
+        long_name='Volum fraction of condensate 15', units='')),
+	'Cl16': dict(dims=['k_l','j','i'], attrs=dict(
+		standard_name="Cl16",
+        long_name='Volum fraction of condensate 16', units='')),
     'KPPviscAz': dict(dims=['k_l', 'j', 'i'], attrs=dict(
         standard_name="KPP_vertical_eddy_visc",
         long_name='KPP vertical eddy viscosity coefficient',
