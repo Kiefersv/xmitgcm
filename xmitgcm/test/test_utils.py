@@ -957,17 +957,21 @@ def test_get_extra_metadata(domain, nx):
         em = get_extra_metadata(domain='notinlist', nx=nx)
 
 
+@pytest.mark.parametrize("outer", [True, False])
 @pytest.mark.parametrize("usedask", [True, False])
-def test_get_grid_from_input(all_grid_datadirs, usedask):
+def test_get_grid_from_input(all_grid_datadirs, usedask, outer):
     from xmitgcm.utils import get_grid_from_input, get_extra_metadata
     from xmitgcm.utils import read_raw_data
     dirname, expected = all_grid_datadirs
     md = get_extra_metadata(domain=expected['domain'], nx=expected['nx'])
+
     ds = get_grid_from_input(dirname + '/' + expected['gridfile'],
                              geometry=expected['geometry'],
                              dtype=np.dtype('d'), endian='>',
                              use_dask=usedask,
-                             extra_metadata=md)
+                             extra_metadata=md,
+                             outer=outer)
+
     # test types
     assert type(ds) == xarray.Dataset
     assert type(ds['XC']) == xarray.core.dataarray.DataArray
@@ -980,9 +984,19 @@ def test_get_grid_from_input(all_grid_datadirs, usedask):
                           'XG', 'YG', 'DXV', 'DYU', 'RAZ',
                           'DXC', 'DYC', 'RAW', 'RAS', 'DXG', 'DYG']
 
+    outerx_vars = ['DXC', 'RAW', 'DYG'] if outer else []
+    outery_vars = ['DYC', 'RAS', 'DXG'] if outer else []
+    outerxy_vars = ['XG', 'YG', 'RAZ'] if outer else []
+
     for var in expected_variables:
+        expected_shape = list(expected['shape'])
+        if var in outerx_vars or var in outerxy_vars:
+            expected_shape[-1] = expected_shape[-1] + 1
+        if var in outery_vars or var in outerxy_vars:
+            expected_shape[-2] = expected_shape[-2] + 1
+
         assert type(ds[var]) == xarray.core.dataarray.DataArray
-        assert ds[var].values.shape == expected['shape']
+        assert ds[var].values.shape == tuple(expected_shape)
 
     # check we don't leave points behind
     if expected['geometry'] == 'llc':
@@ -1033,13 +1047,74 @@ def test_get_grid_from_input(all_grid_datadirs, usedask):
                             order='F', partial_read=True,
                             offset=nx*ny5*sizeofd)
 
-        xc = np.concatenate([xc1[:-1, :-1].flatten(), xc2[:-1, :-1].flatten(),
-                             xc3[:-1, :-1].flatten(), xc4[:-1, :-1].flatten(),
-                             xc5[:-1, :-1].flatten()])
+        xc = np.concatenate([xc1.flatten(), xc2.flatten(),
+                             xc3.flatten(), xc4.flatten(),
+                             xc5.flatten()])
 
-        yc = np.concatenate([yc1[:-1, :-1].flatten(), yc2[:-1, :-1].flatten(),
-                             yc3[:-1, :-1].flatten(), yc4[:-1, :-1].flatten(),
-                             yc5[:-1, :-1].flatten()])
+        yc = np.concatenate([yc1.flatten(), yc2.flatten(),
+                             yc3.flatten(), yc4.flatten(),
+                             yc5.flatten()])
+
+        xc_from_ds = ds['XC'].values.flatten()
+        yc_from_ds = ds['YC'].values.flatten()
+
+        assert xc.min() == xc_from_ds.min()
+        assert xc.max() == xc_from_ds.max()
+        assert yc.min() == yc_from_ds.min()
+        assert yc.max() == yc_from_ds.max()
+
+    if expected['geometry'] == 'cs':
+        nx = expected['nx'] + 1
+        sizeofd = 8
+
+        grid = expected['gridfile']
+        grid1 = dirname + '/' + grid.replace('<NFACET>', '001')
+        grid2 = dirname + '/' + grid.replace('<NFACET>', '002')
+        grid3 = dirname + '/' + grid.replace('<NFACET>', '003')
+        grid4 = dirname + '/' + grid.replace('<NFACET>', '004')
+        grid5 = dirname + '/' + grid.replace('<NFACET>', '005')
+        grid6 = dirname + '/' + grid.replace('<NFACET>', '006')
+
+
+        xc1 = read_raw_data(grid1, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True)
+        xc2 = read_raw_data(grid2, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True)
+        xc3 = read_raw_data(grid3, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True)
+        xc4 = read_raw_data(grid4, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True)
+        xc5 = read_raw_data(grid5, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True)
+        xc6 = read_raw_data(grid6, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True)
+
+        yc1 = read_raw_data(grid1, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True,
+                            offset=nx * nx * sizeofd)
+        yc2 = read_raw_data(grid2, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True,
+                            offset=nx * nx * sizeofd)
+        yc3 = read_raw_data(grid3, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True,
+                            offset=nx * nx * sizeofd)
+        yc4 = read_raw_data(grid4, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True,
+                            offset=nx * nx * sizeofd)
+        yc5 = read_raw_data(grid5, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True,
+                            offset=nx * nx * sizeofd)
+        yc6 = read_raw_data(grid6, dtype=np.dtype('>d'), shape=(nx, nx),
+                            order='F', partial_read=True,
+                            offset=nx * nx * sizeofd)
+
+        xc = np.concatenate([xc1.flatten(), xc2.flatten(),
+                             xc3.flatten(), xc4.flatten(),
+                             xc5.flatten(), xc6.flatten()])
+
+        yc = np.concatenate([yc1.flatten(), yc2.flatten(),
+                             yc3.flatten(), yc4.flatten(),
+                             yc5.flatten(), yc6.flatten()])
 
         xc_from_ds = ds['XC'].values.flatten()
         yc_from_ds = ds['YC'].values.flatten()
@@ -1056,7 +1131,8 @@ def test_get_grid_from_input(all_grid_datadirs, usedask):
                                      geometry=expected['geometry'],
                                      dtype=np.dtype('d'), endian='>',
                                      use_dask=False,
-                                     extra_metadata=None)
+                                     extra_metadata=None,
+                                     outer=outer)
 
 
 @pytest.mark.parametrize("dtype", [np.dtype('d'), np.dtype('f')])
